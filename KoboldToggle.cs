@@ -1,6 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Cil;
+using MonoMod.Utils;
 using ReLogic.Content;
 using System.Collections.Generic;
 using System.IO;
@@ -110,6 +111,7 @@ namespace KoboldToggle
 						}
 					}
 				}
+				IL_PlayerDrawLayers.DrawPlayer_21_Head_TheFace += EditPlayerEyelids;
 			}
 			// Due to this being rendering, might be unsafe to apply outside of !Main.dedServ. Although in testing, no effects have been noticed
 			On_Main.DrawInventory += AddKoboldToggle;
@@ -178,6 +180,20 @@ namespace KoboldToggle
 			Main.spriteBatch.Draw(KoboldIcon.Value, frame.Location.ToVector2(), new Rectangle(0, kPlayer.IsKobold ? KoboldIcon.Height() / 2 : 0, KoboldIcon.Width(), KoboldIcon.Height() / 2), Color.White);
 		}
 
+		private static Asset<Texture2D> GetKoboldSkinLayer(ref PlayerDrawSet drawInfo, int skinID)
+		{
+			int skinVar = drawInfo.skinVar;
+			Player player = drawInfo.drawPlayer;
+			if (player.GetModPlayer<KoboldPlayer>().IsKobold && Kobold.Length > skinVar)
+			{
+				if (Kobold[skinVar].TryGetValue(skinID, out Asset<Texture2D> texture))
+					return texture;
+				else if (Kobold[0].TryGetValue(skinID, out Asset<Texture2D> texture2))
+					return texture2;
+			}
+			return null;
+		}
+
 		private void EditPlayerAssets(ILContext il)
 		{
 			ILCursor c = new(il);
@@ -206,16 +222,42 @@ namespace KoboldToggle
 				c.EmitLdcI4(skinLayerID);
 				c.EmitDelegate((Texture2D curPlayerSkin, ref PlayerDrawSet drawInfo, int skinID) =>
 				{
-					int skinVar = drawInfo.skinVar;
-					Player player = drawInfo.drawPlayer;
-					if (player.GetModPlayer<KoboldPlayer>().IsKobold && Kobold.Length > skinVar)
-					{
-						if (Kobold[skinVar].TryGetValue(skinID, out Asset<Texture2D> texture))
-							return texture.Value;
-						else if (Kobold[0].TryGetValue(skinID, out Asset<Texture2D> texture2))
-							return texture2.Value;
-					}
-					return curPlayerSkin;
+					Asset<Texture2D> texture = GetKoboldSkinLayer(ref drawInfo, skinID);
+					if (texture == null)
+						return curPlayerSkin;
+					else
+						return texture.Value;
+				});
+			}
+		}
+
+		private void EditPlayerEyelids(ILContext il)
+		{
+			ILCursor c = new(il);
+
+			// Clone of the EditPlayerAssets
+			// Instead of looking and editng around "TextureAssets.Player[drawInfo.skinVar, num].Value", it edits "TextureAssets.Player[drawInfo.skinVar, num]"
+			// Note, notice its editing a Asset<Texture2D> instead of a Texture2D
+			while (true)
+			{
+				int drawInfo_varNum = -1;
+				int skinLayerID = -1;
+
+				if (!c.TryGotoNext(MoveType.After,
+					i => i.MatchLdsfld("Terraria.GameContent.TextureAssets", nameof(TextureAssets.Players)),
+					i => i.MatchLdarg(out drawInfo_varNum),
+					i => i.MatchLdfld<PlayerDrawSet>(nameof(PlayerDrawSet.skinVar)),
+					i => i.MatchLdcI4(out skinLayerID),
+					i => i.MatchCall<Asset<Texture2D>[,]>("Get")))
+				{
+					break;
+				}
+
+				c.EmitLdarg(drawInfo_varNum);
+				c.EmitLdcI4(skinLayerID);
+				c.EmitDelegate((Asset<Texture2D> playerEyelid, ref PlayerDrawSet drawInfo, int skinID) =>
+				{
+					return GetKoboldSkinLayer(ref drawInfo, skinID) ?? playerEyelid;
 				});
 			}
 		}
