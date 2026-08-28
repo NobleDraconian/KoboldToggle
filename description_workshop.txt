@@ -1,0 +1,19 @@
+﻿-~=================================~-
+    Kobold Transformation Toggle
+-~=================================~-
+
+This mod adds a simple toggle when ingame to change your player's skin to that of a kobold.
+You can find this toggle ingame right next to where the pvp team icons would be found. Simply enabling the toggle will transform you
+
+This mod and transformation works on servers, and other players should be able to see you as a kobold when transformed.
+The mod will also save the choice of transformation to the player's save file.
+
+Note: some human hair styles change to horns when transform!
+
+-~================~-
+   Special thanks
+-~================~-
+Cathode Ray Kobold & 焚风 - Artists of the sprites used that were from the "Dragon and Kobold Player" texture pack
+(Please check out their texturepack here: https://steamcommunity.com/sharedfiles/filedetails/?id=2610439433)
+Noble_Draconian - Commissioned the mod and came up with the idea
+Lion8cake - Programmed the mod

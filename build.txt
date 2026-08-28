@@ -1,0 +1,3 @@
+displayName = Kobold Skin Toggle
+author = Lion8cake, noble_draconian & Cathode Ray Kobold
+version = 1.0.1
